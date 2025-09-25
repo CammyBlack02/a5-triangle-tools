@@ -66,6 +66,7 @@ import triangle.abstractSyntaxTrees.expressions.VnameExpression;
 import triangle.abstractSyntaxTrees.formals.ConstFormalParameter;
 import triangle.abstractSyntaxTrees.formals.EmptyFormalParameterSequence;
 import triangle.abstractSyntaxTrees.formals.FuncFormalParameter;
+import triangle.abstractSyntaxTrees.commands.RepeatCommand;
 import triangle.abstractSyntaxTrees.formals.MultipleFormalParameterSequence;
 import triangle.abstractSyntaxTrees.formals.ProcFormalParameter;
 import triangle.abstractSyntaxTrees.formals.SingleFormalParameterSequence;
@@ -182,6 +183,12 @@ public final class Encoder implements ActualParameterVisitor<Frame, Integer>,
 		emitter.patch(jumpAddr);
 		ast.E.visit(this, frame);
 		emitter.emit(OpCode.JUMPIF, Machine.trueRep, Register.CB, loopAddr);
+		return null;
+	}
+
+	@Override
+	public Void visitRepeatCommand(RepeatCommand ast, Frame frame) {
+
 		return null;
 	}
 

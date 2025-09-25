@@ -19,6 +19,7 @@
 package triangle.syntacticAnalyzer;
 
 import triangle.ErrorReporter;
+import triangle.abstractSyntaxTrees.commands.RepeatCommand;
 import triangle.abstractSyntaxTrees.Program;
 import triangle.abstractSyntaxTrees.actuals.ActualParameter;
 import triangle.abstractSyntaxTrees.actuals.ActualParameterSequence;
@@ -334,6 +335,16 @@ public class Parser {
 			Command cAST = parseSingleCommand();
 			finish(commandPos);
 			commandAST = new WhileCommand(eAST, cAST, commandPos);
+		}
+			break;
+
+		case REPEAT: {
+			acceptIt();
+			Command cAST = parseSingleCommand();
+			accept(Token.Kind.UNTIL);
+			Expression eAST = parseExpression();
+			finish(commandPos);
+			commandAST = new RepeatCommand(eAST, cAST, commandPos);
 		}
 			break;
 

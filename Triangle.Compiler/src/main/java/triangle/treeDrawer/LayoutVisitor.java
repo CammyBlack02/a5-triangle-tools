@@ -47,6 +47,7 @@ import triangle.abstractSyntaxTrees.declarations.SequentialDeclaration;
 import triangle.abstractSyntaxTrees.declarations.UnaryOperatorDeclaration;
 import triangle.abstractSyntaxTrees.declarations.VarDeclaration;
 import triangle.abstractSyntaxTrees.expressions.ArrayExpression;
+import triangle.abstractSyntaxTrees.commands.RepeatCommand;
 import triangle.abstractSyntaxTrees.expressions.BinaryExpression;
 import triangle.abstractSyntaxTrees.expressions.CallExpression;
 import triangle.abstractSyntaxTrees.expressions.CharacterExpression;
@@ -161,6 +162,12 @@ public class LayoutVisitor implements ActualParameterVisitor<Void, DrawingTree>,
 		var d1 = ast.E.visit(this);
 		var d2 = ast.C.visit(this);
 		return layoutBinary("WhileCom.", d1, d2);
+	}
+
+	@Override
+	public DrawingTree visitRepeatCommand(RepeatCommand ast, Void obj) {
+	
+		return null;
 	}
 
 	// Expressions
@@ -472,6 +479,7 @@ public class LayoutVisitor implements ActualParameterVisitor<Void, DrawingTree>,
 		var d3 = ast.FT.visit(this);
 		return layoutTernary("Mult.F.TypeD.", d1, d2, d3);
 	}
+
 
 	@Override
 	public DrawingTree visitSingleFieldTypeDenoter(SingleFieldTypeDenoter ast, Void obj) {
