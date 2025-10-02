@@ -1,0 +1,814 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Encoder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Triangle.Compiler</a> &gt; <a href="index.source.html" class="el_package">triangle.codeGenerator</a> &gt; <span class="el_source">Encoder.java</span></div><h1>Encoder.java</h1><pre class="source lang-java linenums">/*
+ * @(#)Encoder.java                       
+ * 
+ * Revisions and updates (c) 2022-2025 Sandy Brownlee. alexander.brownlee@stir.ac.uk
+ * 
+ * Original release:
+ *
+ * Copyright (C) 1999, 2003 D.A. Watt and D.F. Brown
+ * Dept. of Computing Science, University of Glasgow, Glasgow G12 8QQ Scotland
+ * and School of Computer and Math Sciences, The Robert Gordon University,
+ * St. Andrew Street, Aberdeen AB25 1HG, Scotland.
+ * All rights reserved.
+ *
+ * This software is provided free for educational use only. It may
+ * not be used for commercial purposes without the prior written permission
+ * of the authors.
+ */
+
+package triangle.codeGenerator;
+
+import triangle.ErrorReporter;
+import triangle.StdEnvironment;
+import triangle.abstractMachine.Machine;
+import triangle.abstractMachine.OpCode;
+import triangle.abstractMachine.Primitive;
+import triangle.abstractMachine.Register;
+import triangle.abstractSyntaxTrees.AbstractSyntaxTree;
+import triangle.abstractSyntaxTrees.Program;
+import triangle.abstractSyntaxTrees.actuals.ConstActualParameter;
+import triangle.abstractSyntaxTrees.actuals.EmptyActualParameterSequence;
+import triangle.abstractSyntaxTrees.actuals.FuncActualParameter;
+import triangle.abstractSyntaxTrees.actuals.MultipleActualParameterSequence;
+import triangle.abstractSyntaxTrees.actuals.ProcActualParameter;
+import triangle.abstractSyntaxTrees.actuals.SingleActualParameterSequence;
+import triangle.abstractSyntaxTrees.actuals.VarActualParameter;
+import triangle.abstractSyntaxTrees.aggregates.MultipleArrayAggregate;
+import triangle.abstractSyntaxTrees.aggregates.MultipleRecordAggregate;
+import triangle.abstractSyntaxTrees.aggregates.SingleArrayAggregate;
+import triangle.abstractSyntaxTrees.aggregates.SingleRecordAggregate;
+import triangle.abstractSyntaxTrees.commands.AssignCommand;
+import triangle.abstractSyntaxTrees.commands.CallCommand;
+import triangle.abstractSyntaxTrees.commands.EmptyCommand;
+import triangle.abstractSyntaxTrees.commands.IfCommand;
+import triangle.abstractSyntaxTrees.commands.LetCommand;
+import triangle.abstractSyntaxTrees.commands.SequentialCommand;
+import triangle.abstractSyntaxTrees.commands.WhileCommand;
+import triangle.abstractSyntaxTrees.declarations.BinaryOperatorDeclaration;
+import triangle.abstractSyntaxTrees.declarations.ConstDeclaration;
+import triangle.abstractSyntaxTrees.declarations.Declaration;
+import triangle.abstractSyntaxTrees.declarations.FuncDeclaration;
+import triangle.abstractSyntaxTrees.declarations.ProcDeclaration;
+import triangle.abstractSyntaxTrees.declarations.SequentialDeclaration;
+import triangle.abstractSyntaxTrees.declarations.UnaryOperatorDeclaration;
+import triangle.abstractSyntaxTrees.declarations.VarDeclaration;
+import triangle.abstractSyntaxTrees.expressions.ArrayExpression;
+import triangle.abstractSyntaxTrees.expressions.BinaryExpression;
+import triangle.abstractSyntaxTrees.expressions.CallExpression;
+import triangle.abstractSyntaxTrees.expressions.CharacterExpression;
+import triangle.abstractSyntaxTrees.expressions.EmptyExpression;
+import triangle.abstractSyntaxTrees.expressions.IfExpression;
+import triangle.abstractSyntaxTrees.expressions.IntegerExpression;
+import triangle.abstractSyntaxTrees.expressions.LetExpression;
+import triangle.abstractSyntaxTrees.expressions.RecordExpression;
+import triangle.abstractSyntaxTrees.expressions.UnaryExpression;
+import triangle.abstractSyntaxTrees.expressions.VnameExpression;
+import triangle.abstractSyntaxTrees.formals.ConstFormalParameter;
+import triangle.abstractSyntaxTrees.formals.EmptyFormalParameterSequence;
+import triangle.abstractSyntaxTrees.formals.FuncFormalParameter;
+import triangle.abstractSyntaxTrees.commands.RepeatCommand;
+import triangle.abstractSyntaxTrees.formals.MultipleFormalParameterSequence;
+import triangle.abstractSyntaxTrees.formals.ProcFormalParameter;
+import triangle.abstractSyntaxTrees.formals.SingleFormalParameterSequence;
+import triangle.abstractSyntaxTrees.formals.VarFormalParameter;
+import triangle.abstractSyntaxTrees.terminals.CharacterLiteral;
+import triangle.abstractSyntaxTrees.terminals.Identifier;
+import triangle.abstractSyntaxTrees.terminals.IntegerLiteral;
+import triangle.abstractSyntaxTrees.terminals.Operator;
+import triangle.abstractSyntaxTrees.types.AnyTypeDenoter;
+import triangle.abstractSyntaxTrees.types.ArrayTypeDenoter;
+import triangle.abstractSyntaxTrees.types.BoolTypeDenoter;
+import triangle.abstractSyntaxTrees.types.CharTypeDenoter;
+import triangle.abstractSyntaxTrees.types.ErrorTypeDenoter;
+import triangle.abstractSyntaxTrees.types.IntTypeDenoter;
+import triangle.abstractSyntaxTrees.types.MultipleFieldTypeDenoter;
+import triangle.abstractSyntaxTrees.types.RecordTypeDenoter;
+import triangle.abstractSyntaxTrees.types.SimpleTypeDenoter;
+import triangle.abstractSyntaxTrees.types.SingleFieldTypeDenoter;
+import triangle.abstractSyntaxTrees.types.TypeDeclaration;
+import triangle.abstractSyntaxTrees.visitors.ActualParameterSequenceVisitor;
+import triangle.abstractSyntaxTrees.visitors.ActualParameterVisitor;
+import triangle.abstractSyntaxTrees.visitors.ArrayAggregateVisitor;
+import triangle.abstractSyntaxTrees.visitors.CommandVisitor;
+import triangle.abstractSyntaxTrees.visitors.DeclarationVisitor;
+import triangle.abstractSyntaxTrees.visitors.ExpressionVisitor;
+import triangle.abstractSyntaxTrees.visitors.FormalParameterSequenceVisitor;
+import triangle.abstractSyntaxTrees.visitors.IdentifierVisitor;
+import triangle.abstractSyntaxTrees.visitors.LiteralVisitor;
+import triangle.abstractSyntaxTrees.visitors.OperatorVisitor;
+import triangle.abstractSyntaxTrees.visitors.ProgramVisitor;
+import triangle.abstractSyntaxTrees.visitors.RecordAggregateVisitor;
+import triangle.abstractSyntaxTrees.visitors.TypeDenoterVisitor;
+import triangle.abstractSyntaxTrees.visitors.VnameVisitor;
+import triangle.abstractSyntaxTrees.vnames.DotVname;
+import triangle.abstractSyntaxTrees.vnames.SimpleVname;
+import triangle.abstractSyntaxTrees.vnames.SubscriptVname;
+import triangle.abstractSyntaxTrees.vnames.Vname;
+import triangle.codeGenerator.entities.AddressableEntity;
+import triangle.codeGenerator.entities.EqualityRoutine;
+import triangle.codeGenerator.entities.FetchableEntity;
+import triangle.codeGenerator.entities.Field;
+import triangle.codeGenerator.entities.KnownAddress;
+import triangle.codeGenerator.entities.KnownRoutine;
+import triangle.codeGenerator.entities.KnownValue;
+import triangle.codeGenerator.entities.PrimitiveRoutine;
+import triangle.codeGenerator.entities.RoutineEntity;
+import triangle.codeGenerator.entities.RuntimeEntity;
+import triangle.codeGenerator.entities.TypeRepresentation;
+import triangle.codeGenerator.entities.UnknownAddress;
+import triangle.codeGenerator.entities.UnknownRoutine;
+import triangle.codeGenerator.entities.UnknownValue;
+
+public final class Encoder implements ActualParameterVisitor&lt;Frame, Integer&gt;,
+		ActualParameterSequenceVisitor&lt;Frame, Integer&gt;, ArrayAggregateVisitor&lt;Frame, Integer&gt;,
+		CommandVisitor&lt;Frame, Void&gt;, DeclarationVisitor&lt;Frame, Integer&gt;, ExpressionVisitor&lt;Frame, Integer&gt;,
+		FormalParameterSequenceVisitor&lt;Frame, Integer&gt;, IdentifierVisitor&lt;Frame, Void&gt;, LiteralVisitor&lt;Void, Void&gt;,
+		OperatorVisitor&lt;Frame, Void&gt;, ProgramVisitor&lt;Frame, Void&gt;, RecordAggregateVisitor&lt;Frame, Integer&gt;,
+		TypeDenoterVisitor&lt;Frame, Integer&gt;, VnameVisitor&lt;Frame, RuntimeEntity&gt; {
+
+	// Commands
+	@Override
+	public Void visitAssignCommand(AssignCommand ast, Frame frame) {
+<span class="nc" id="L132">		var valSize = ast.E.visit(this, frame);</span>
+<span class="nc" id="L133">		encodeStore(ast.V, frame.expand(valSize), valSize);</span>
+<span class="nc" id="L134">		return null;</span>
+	}
+
+	@Override
+	public Void visitCallCommand(CallCommand ast, Frame frame) {
+<span class="nc" id="L139">		var argsSize = ast.APS.visit(this, frame);</span>
+<span class="nc" id="L140">		ast.I.visit(this, frame.replace(argsSize));</span>
+<span class="nc" id="L141">		return null;</span>
+	}
+
+	@Override
+	public Void visitEmptyCommand(EmptyCommand ast, Frame frame) {
+<span class="nc" id="L146">		return null;</span>
+	}
+
+	@Override
+	public Void visitIfCommand(IfCommand ast, Frame frame) {
+<span class="nc" id="L151">		ast.E.visit(this, frame);</span>
+<span class="nc" id="L152">		var jumpifAddr = emitter.emit(OpCode.JUMPIF, Machine.falseRep, Register.CB, 0);</span>
+<span class="nc" id="L153">		ast.C1.visit(this, frame);</span>
+<span class="nc" id="L154">		var jumpAddr = emitter.emit(OpCode.JUMP, 0, Register.CB, 0);</span>
+<span class="nc" id="L155">		emitter.patch(jumpifAddr);</span>
+<span class="nc" id="L156">		ast.C2.visit(this, frame);</span>
+<span class="nc" id="L157">		emitter.patch(jumpAddr);</span>
+<span class="nc" id="L158">		return null;</span>
+	}
+
+	@Override
+	public Void visitLetCommand(LetCommand ast, Frame frame) {
+<span class="nc" id="L163">		var extraSize = ast.D.visit(this, frame);</span>
+<span class="nc" id="L164">		ast.C.visit(this, frame.expand(extraSize));</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">		if (extraSize &gt; 0) {</span>
+<span class="nc" id="L166">			emitter.emit(OpCode.POP, extraSize);</span>
+		}
+<span class="nc" id="L168">		return null;</span>
+	}
+
+	@Override
+	public Void visitSequentialCommand(SequentialCommand ast, Frame frame) {
+<span class="nc" id="L173">		ast.C1.visit(this, frame);</span>
+<span class="nc" id="L174">		ast.C2.visit(this, frame);</span>
+<span class="nc" id="L175">		return null;</span>
+	}
+
+	@Override
+	public Void visitWhileCommand(WhileCommand ast, Frame frame) {
+<span class="nc" id="L180">		var jumpAddr = emitter.emit(OpCode.JUMP, 0, Register.CB, 0);</span>
+<span class="nc" id="L181">		var loopAddr = emitter.getNextInstrAddr();</span>
+<span class="nc" id="L182">		ast.C.visit(this, frame);</span>
+<span class="nc" id="L183">		emitter.patch(jumpAddr);</span>
+<span class="nc" id="L184">		ast.E.visit(this, frame);</span>
+<span class="nc" id="L185">		emitter.emit(OpCode.JUMPIF, Machine.trueRep, Register.CB, loopAddr);</span>
+<span class="nc" id="L186">		return null;</span>
+	}
+
+	@Override
+	public Void visitRepeatCommand(RepeatCommand ast, Frame frame) {
+
+<span class="nc" id="L192">		return null;</span>
+	}
+
+	// Expressions
+	@Override
+	public Integer visitArrayExpression(ArrayExpression ast, Frame frame) {
+<span class="nc" id="L198">		ast.type.visit(this, frame);</span>
+<span class="nc" id="L199">		return ast.AA.visit(this, frame);</span>
+	}
+
+	@Override
+	public Integer visitBinaryExpression(BinaryExpression ast, Frame frame) {
+<span class="nc" id="L204">		var valSize = ast.type.visit(this);</span>
+<span class="nc" id="L205">		var valSize1 = ast.E1.visit(this, frame);</span>
+<span class="nc" id="L206">		var frame1 = frame.expand(valSize1);</span>
+<span class="nc" id="L207">		var valSize2 = ast.E2.visit(this, frame1);</span>
+<span class="nc" id="L208">		var frame2 = frame.replace(valSize1 + valSize2);</span>
+<span class="nc" id="L209">		ast.O.visit(this, frame2);</span>
+<span class="nc" id="L210">		return valSize;</span>
+	}
+
+	@Override
+	public Integer visitCallExpression(CallExpression ast, Frame frame) {
+<span class="nc" id="L215">		var valSize = ast.type.visit(this);</span>
+<span class="nc" id="L216">		var argsSize = ast.APS.visit(this, frame);</span>
+<span class="nc" id="L217">		ast.I.visit(this, frame.replace(argsSize));</span>
+<span class="nc" id="L218">		return valSize;</span>
+	}
+
+	@Override
+	public Integer visitCharacterExpression(CharacterExpression ast, Frame frame) {
+<span class="nc" id="L223">		var valSize = ast.type.visit(this);</span>
+<span class="nc" id="L224">		emitter.emit(OpCode.LOADL, ast.CL.getValue());</span>
+<span class="nc" id="L225">		return valSize;</span>
+	}
+
+	@Override
+	public Integer visitEmptyExpression(EmptyExpression ast, Frame frame) {
+<span class="nc" id="L230">		return 0;</span>
+	}
+
+	@Override
+	public Integer visitIfExpression(IfExpression ast, Frame frame) {
+<span class="nc" id="L235">		ast.type.visit(this);</span>
+<span class="nc" id="L236">		ast.E1.visit(this, frame);</span>
+<span class="nc" id="L237">		var jumpifAddr = emitter.emit(OpCode.JUMPIF, Machine.falseRep, Register.CB, 0);</span>
+<span class="nc" id="L238">		var valSize = ast.E2.visit(this, frame);</span>
+<span class="nc" id="L239">		var jumpAddr = emitter.emit(OpCode.JUMP, 0, Register.CB, 0);</span>
+<span class="nc" id="L240">		emitter.patch(jumpifAddr);</span>
+<span class="nc" id="L241">		valSize = ast.E3.visit(this, frame);</span>
+<span class="nc" id="L242">		emitter.patch(jumpAddr);</span>
+<span class="nc" id="L243">		return valSize;</span>
+	}
+
+	@Override
+	public Integer visitIntegerExpression(IntegerExpression ast, Frame frame) {
+<span class="nc" id="L248">		var valSize = ast.type.visit(this);</span>
+<span class="nc" id="L249">		emitter.emit(OpCode.LOADL, ast.IL.getValue());</span>
+<span class="nc" id="L250">		return valSize;</span>
+	}
+
+	@Override
+	public Integer visitLetExpression(LetExpression ast, Frame frame) {
+<span class="nc" id="L255">		ast.type.visit(this);</span>
+<span class="nc" id="L256">		var extraSize = ast.D.visit(this, frame);</span>
+<span class="nc" id="L257">		var frame1 = frame.expand(extraSize);</span>
+<span class="nc" id="L258">		var valSize = ast.E.visit(this, frame1);</span>
+<span class="nc bnc" id="L259" title="All 2 branches missed.">		if (extraSize &gt; 0) {</span>
+<span class="nc" id="L260">			emitter.emit(OpCode.POP, valSize, extraSize);</span>
+		}
+<span class="nc" id="L262">		return valSize;</span>
+	}
+
+	@Override
+	public Integer visitRecordExpression(RecordExpression ast, Frame frame) {
+<span class="nc" id="L267">		ast.type.visit(this);</span>
+<span class="nc" id="L268">		return ast.RA.visit(this, frame);</span>
+	}
+
+	@Override
+	public Integer visitUnaryExpression(UnaryExpression ast, Frame frame) {
+<span class="nc" id="L273">		var valSize = ast.type.visit(this);</span>
+<span class="nc" id="L274">		ast.E.visit(this, frame);</span>
+<span class="nc" id="L275">		ast.O.visit(this, frame.replace(valSize));</span>
+<span class="nc" id="L276">		return valSize;</span>
+	}
+
+	@Override
+	public Integer visitVnameExpression(VnameExpression ast, Frame frame) {
+<span class="nc" id="L281">		var valSize = ast.type.visit(this);</span>
+<span class="nc" id="L282">		encodeFetch(ast.V, frame, valSize);</span>
+<span class="nc" id="L283">		return valSize;</span>
+	}
+
+	// Declarations
+	@Override
+	public Integer visitBinaryOperatorDeclaration(BinaryOperatorDeclaration ast, Frame frame) {
+<span class="nc" id="L289">		return 0;</span>
+	}
+
+	@Override
+	public Integer visitConstDeclaration(ConstDeclaration ast, Frame frame) {
+<span class="nc" id="L294">		var extraSize = 0;</span>
+<span class="nc bnc" id="L295" title="All 2 branches missed.">		if (ast.E.isLiteral()) {</span>
+<span class="nc" id="L296">			ast.entity = new KnownValue(ast.E.type.getSize(), ast.E.getValue());</span>
+		} else {
+<span class="nc" id="L298">			var valSize = ast.E.visit(this, frame);</span>
+<span class="nc" id="L299">			ast.entity = new UnknownValue(valSize, frame);</span>
+<span class="nc" id="L300">			extraSize = valSize;</span>
+		}
+<span class="nc" id="L302">		writeTableDetails(ast);</span>
+<span class="nc" id="L303">		return extraSize;</span>
+	}
+
+	@Override
+	public Integer visitFuncDeclaration(FuncDeclaration ast, Frame frame) {
+<span class="nc" id="L308">		var argsSize = 0;</span>
+<span class="nc" id="L309">		var valSize = 0;</span>
+
+<span class="nc" id="L311">		var jumpAddr = emitter.emit(OpCode.JUMP, 0, Register.CB, 0);</span>
+<span class="nc" id="L312">		ast.entity = new KnownRoutine(Machine.closureSize, frame.getLevel(), emitter.getNextInstrAddr());</span>
+<span class="nc" id="L313">		writeTableDetails(ast);</span>
+<span class="nc bnc" id="L314" title="All 2 branches missed.">		if (frame.getLevel() == Machine.maxRoutineLevel) {</span>
+<span class="nc" id="L315">			reporter.reportRestriction(&quot;can't nest routines more than 7 deep&quot;);</span>
+		} else {
+<span class="nc" id="L317">			var frame1 = frame.push(0);</span>
+<span class="nc" id="L318">			argsSize = ast.FPS.visit(this, frame1);</span>
+<span class="nc" id="L319">			var frame2 = frame.push(Machine.linkDataSize);</span>
+<span class="nc" id="L320">			valSize = ast.E.visit(this, frame2);</span>
+		}
+<span class="nc" id="L322">		emitter.emit(OpCode.RETURN, valSize, argsSize);</span>
+<span class="nc" id="L323">		emitter.patch(jumpAddr);</span>
+<span class="nc" id="L324">		return 0;</span>
+	}
+
+	@Override
+	public Integer visitProcDeclaration(ProcDeclaration ast, Frame frame) {
+<span class="nc" id="L329">		var argsSize = 0;</span>
+<span class="nc" id="L330">		var jumpAddr = emitter.emit(OpCode.JUMP, 0, Register.CB, 0);</span>
+<span class="nc" id="L331">		ast.entity = new KnownRoutine(Machine.closureSize, frame.getLevel(), emitter.getNextInstrAddr());</span>
+<span class="nc" id="L332">		writeTableDetails(ast);</span>
+<span class="nc bnc" id="L333" title="All 2 branches missed.">		if (frame.getLevel() == Machine.maxRoutineLevel) {</span>
+<span class="nc" id="L334">			reporter.reportRestriction(&quot;can't nest routines so deeply&quot;);</span>
+		} else {
+<span class="nc" id="L336">			var frame1 = frame.push(0);</span>
+<span class="nc" id="L337">			argsSize = ast.FPS.visit(this, frame1);</span>
+<span class="nc" id="L338">			var frame2 = frame.push(Machine.linkDataSize);</span>
+<span class="nc" id="L339">			ast.C.visit(this, frame2);</span>
+		}
+<span class="nc" id="L341">		emitter.emit(OpCode.RETURN, argsSize);</span>
+<span class="nc" id="L342">		emitter.patch(jumpAddr);</span>
+<span class="nc" id="L343">		return 0;</span>
+	}
+
+	@Override
+	public Integer visitSequentialDeclaration(SequentialDeclaration ast, Frame frame) {
+<span class="nc" id="L348">		var extraSize1 = ast.D1.visit(this, frame);</span>
+<span class="nc" id="L349">		var frame1 = frame.expand(extraSize1);</span>
+<span class="nc" id="L350">		var extraSize2 = ast.D2.visit(this, frame1);</span>
+<span class="nc" id="L351">		return extraSize1 + extraSize2;</span>
+	}
+
+	@Override
+	public Integer visitTypeDeclaration(TypeDeclaration ast, Frame frame) {
+		// just to ensure the type's representation is decided
+<span class="nc" id="L357">		ast.T.visit(this);</span>
+<span class="nc" id="L358">		return 0;</span>
+	}
+
+	@Override
+	public Integer visitUnaryOperatorDeclaration(UnaryOperatorDeclaration ast, Frame frame) {
+<span class="nc" id="L363">		return 0;</span>
+	}
+
+	@Override
+	public Integer visitVarDeclaration(VarDeclaration ast, Frame frame) {
+<span class="nc" id="L368">		var extraSize = ast.T.visit(this);</span>
+<span class="nc" id="L369">		emitter.emit(OpCode.PUSH, extraSize);</span>
+<span class="nc" id="L370">		ast.entity = new KnownAddress(Machine.addressSize, frame);</span>
+<span class="nc" id="L371">		writeTableDetails(ast);</span>
+<span class="nc" id="L372">		return extraSize;</span>
+	}
+
+	// Array Aggregates
+	@Override
+	public Integer visitMultipleArrayAggregate(MultipleArrayAggregate ast, Frame frame) {
+<span class="nc" id="L378">		var elemSize = ast.E.visit(this, frame);</span>
+<span class="nc" id="L379">		var frame1 = frame.expand(elemSize);</span>
+<span class="nc" id="L380">		var arraySize = ast.AA.visit(this, frame1);</span>
+<span class="nc" id="L381">		return elemSize + arraySize;</span>
+	}
+
+	@Override
+	public Integer visitSingleArrayAggregate(SingleArrayAggregate ast, Frame frame) {
+<span class="nc" id="L386">		return ast.E.visit(this, frame);</span>
+	}
+
+	// Record Aggregates
+	@Override
+	public Integer visitMultipleRecordAggregate(MultipleRecordAggregate ast, Frame frame) {
+<span class="nc" id="L392">		var fieldSize = ast.E.visit(this, frame);</span>
+<span class="nc" id="L393">		var frame1 = frame.expand(fieldSize);</span>
+<span class="nc" id="L394">		var recordSize = ast.RA.visit(this, frame1);</span>
+<span class="nc" id="L395">		return fieldSize + recordSize;</span>
+	}
+
+	@Override
+	public Integer visitSingleRecordAggregate(SingleRecordAggregate ast, Frame frame) {
+<span class="nc" id="L400">		return ast.E.visit(this, frame);</span>
+	}
+
+	// Formal Parameters
+	@Override
+	public Integer visitConstFormalParameter(ConstFormalParameter ast, Frame frame) {
+<span class="nc" id="L406">		var valSize = ast.T.visit(this);</span>
+<span class="nc" id="L407">		ast.entity = new UnknownValue(valSize, frame.getLevel(), -frame.getSize() - valSize);</span>
+<span class="nc" id="L408">		writeTableDetails(ast);</span>
+<span class="nc" id="L409">		return valSize;</span>
+	}
+
+	@Override
+	public Integer visitFuncFormalParameter(FuncFormalParameter ast, Frame frame) {
+<span class="nc" id="L414">		var argsSize = Machine.closureSize;</span>
+<span class="nc" id="L415">		ast.entity = new UnknownRoutine(Machine.closureSize, frame.getLevel(), -frame.getSize() - argsSize);</span>
+<span class="nc" id="L416">		writeTableDetails(ast);</span>
+<span class="nc" id="L417">		return argsSize;</span>
+	}
+
+	@Override
+	public Integer visitProcFormalParameter(ProcFormalParameter ast, Frame frame) {
+<span class="nc" id="L422">		var argsSize = Machine.closureSize;</span>
+<span class="nc" id="L423">		ast.entity = new UnknownRoutine(Machine.closureSize, frame.getLevel(), -frame.getSize() - argsSize);</span>
+<span class="nc" id="L424">		writeTableDetails(ast);</span>
+<span class="nc" id="L425">		return argsSize;</span>
+	}
+
+	@Override
+	public Integer visitVarFormalParameter(VarFormalParameter ast, Frame frame) {
+<span class="nc" id="L430">		ast.T.visit(this);</span>
+<span class="nc" id="L431">		ast.entity = new UnknownAddress(Machine.addressSize, frame.getLevel(), -frame.getSize() - Machine.addressSize);</span>
+<span class="nc" id="L432">		writeTableDetails(ast);</span>
+<span class="nc" id="L433">		return Machine.addressSize;</span>
+	}
+
+	@Override
+	public Integer visitEmptyFormalParameterSequence(EmptyFormalParameterSequence ast, Frame frame) {
+<span class="nc" id="L438">		return 0;</span>
+	}
+
+	@Override
+	public Integer visitMultipleFormalParameterSequence(MultipleFormalParameterSequence ast, Frame frame) {
+<span class="nc" id="L443">		var argsSize1 = ast.FPS.visit(this, frame);</span>
+<span class="nc" id="L444">		var frame1 = frame.expand(argsSize1);</span>
+<span class="nc" id="L445">		var argsSize2 = ast.FP.visit(this, frame1);</span>
+<span class="nc" id="L446">		return argsSize1 + argsSize2;</span>
+	}
+
+	@Override
+	public Integer visitSingleFormalParameterSequence(SingleFormalParameterSequence ast, Frame frame) {
+<span class="nc" id="L451">		return ast.FP.visit(this, frame);</span>
+	}
+
+	// Actual Parameters
+	@Override
+	public Integer visitConstActualParameter(ConstActualParameter ast, Frame frame) {
+<span class="nc" id="L457">		return ast.E.visit(this, frame);</span>
+	}
+
+	@Override
+	public Integer visitFuncActualParameter(FuncActualParameter ast, Frame frame) {
+<span class="nc" id="L462">		var routineEntity = (RoutineEntity) ast.I.decl.entity;</span>
+<span class="nc" id="L463">		routineEntity.encodeFetch(emitter, frame);</span>
+<span class="nc" id="L464">		return Machine.closureSize;</span>
+	}
+
+	@Override
+	public Integer visitProcActualParameter(ProcActualParameter ast, Frame frame) {
+<span class="nc" id="L469">		var routineEntity = (RoutineEntity) ast.I.decl.entity;</span>
+<span class="nc" id="L470">		routineEntity.encodeFetch(emitter, frame);</span>
+<span class="nc" id="L471">		return Machine.closureSize;</span>
+	}
+
+	@Override
+	public Integer visitVarActualParameter(VarActualParameter ast, Frame frame) {
+<span class="nc" id="L476">		encodeFetchAddress(ast.V, frame);</span>
+<span class="nc" id="L477">		return Machine.addressSize;</span>
+	}
+
+	@Override
+	public Integer visitEmptyActualParameterSequence(EmptyActualParameterSequence ast, Frame frame) {
+<span class="nc" id="L482">		return 0;</span>
+	}
+
+	@Override
+	public Integer visitMultipleActualParameterSequence(MultipleActualParameterSequence ast, Frame frame) {
+<span class="nc" id="L487">		var argsSize1 = ast.AP.visit(this, frame);</span>
+<span class="nc" id="L488">		var frame1 = frame.expand(argsSize1);</span>
+<span class="nc" id="L489">		var argsSize2 = ast.APS.visit(this, frame1);</span>
+<span class="nc" id="L490">		return argsSize1 + argsSize2;</span>
+	}
+
+	@Override
+	public Integer visitSingleActualParameterSequence(SingleActualParameterSequence ast, Frame frame) {
+<span class="nc" id="L495">		return ast.AP.visit(this, frame);</span>
+	}
+
+	// Type Denoters
+	@Override
+	public Integer visitAnyTypeDenoter(AnyTypeDenoter ast, Frame frame) {
+<span class="nc" id="L501">		return 0;</span>
+	}
+
+	@Override
+	public Integer visitArrayTypeDenoter(ArrayTypeDenoter ast, Frame frame) {
+		int typeSize;
+<span class="nc bnc" id="L507" title="All 2 branches missed.">		if (ast.entity == null) {</span>
+<span class="nc" id="L508">			var elemSize = ast.T.visit(this);</span>
+<span class="nc" id="L509">			typeSize = ast.IL.getValue() * elemSize;</span>
+<span class="nc" id="L510">			ast.entity = new TypeRepresentation(typeSize);</span>
+<span class="nc" id="L511">			writeTableDetails(ast);</span>
+<span class="nc" id="L512">		} else {</span>
+<span class="nc" id="L513">			typeSize = ast.entity.getSize();</span>
+		}
+<span class="nc" id="L515">		return typeSize;</span>
+	}
+
+	@Override
+	public Integer visitBoolTypeDenoter(BoolTypeDenoter ast, Frame frame) {
+<span class="nc bnc" id="L520" title="All 2 branches missed.">		if (ast.entity == null) {</span>
+<span class="nc" id="L521">			ast.entity = new TypeRepresentation(Machine.booleanSize);</span>
+<span class="nc" id="L522">			writeTableDetails(ast);</span>
+		}
+<span class="nc" id="L524">		return Machine.booleanSize;</span>
+	}
+
+	@Override
+	public Integer visitCharTypeDenoter(CharTypeDenoter ast, Frame frame) {
+<span class="nc bnc" id="L529" title="All 2 branches missed.">		if (ast.entity == null) {</span>
+<span class="nc" id="L530">			ast.entity = new TypeRepresentation(Machine.characterSize);</span>
+<span class="nc" id="L531">			writeTableDetails(ast);</span>
+		}
+<span class="nc" id="L533">		return Machine.characterSize;</span>
+	}
+
+	@Override
+	public Integer visitErrorTypeDenoter(ErrorTypeDenoter ast, Frame frame) {
+<span class="nc" id="L538">		return 0;</span>
+	}
+
+	@Override
+	public Integer visitSimpleTypeDenoter(SimpleTypeDenoter ast, Frame frame) {
+<span class="nc" id="L543">		return 0;</span>
+	}
+
+	@Override
+	public Integer visitIntTypeDenoter(IntTypeDenoter ast, Frame frame) {
+<span class="nc bnc" id="L548" title="All 2 branches missed.">		if (ast.entity == null) {</span>
+<span class="nc" id="L549">			ast.entity = new TypeRepresentation(Machine.integerSize);</span>
+<span class="nc" id="L550">			writeTableDetails(ast);</span>
+		}
+<span class="nc" id="L552">		return Machine.integerSize;</span>
+	}
+
+	@Override
+	public Integer visitRecordTypeDenoter(RecordTypeDenoter ast, Frame frame) {
+		int typeSize;
+<span class="nc bnc" id="L558" title="All 2 branches missed.">		if (ast.entity == null) {</span>
+<span class="nc" id="L559">			typeSize = ast.FT.visit(this, frame);</span>
+<span class="nc" id="L560">			ast.entity = new TypeRepresentation(typeSize);</span>
+<span class="nc" id="L561">			writeTableDetails(ast);</span>
+		} else {
+<span class="nc" id="L563">			typeSize = ast.entity.getSize();</span>
+		}
+<span class="nc" id="L565">		return typeSize;</span>
+	}
+
+	@Override
+	public Integer visitMultipleFieldTypeDenoter(MultipleFieldTypeDenoter ast, Frame frame) {
+<span class="nc bnc" id="L570" title="All 2 branches missed.">		if (frame == null) { // in this case, we're just using the frame to wrap up the size</span>
+<span class="nc" id="L571">			frame = Frame.Initial;</span>
+		}
+		
+<span class="nc" id="L574">		var offset = frame.getSize();</span>
+		int fieldSize;
+<span class="nc bnc" id="L576" title="All 2 branches missed.">		if (ast.entity == null) {</span>
+<span class="nc" id="L577">			fieldSize = ast.T.visit(this);</span>
+<span class="nc" id="L578">			ast.entity = new Field(fieldSize, offset);</span>
+<span class="nc" id="L579">			writeTableDetails(ast);</span>
+		} else {
+<span class="nc" id="L581">			fieldSize = ast.entity.getSize();</span>
+		}
+
+<span class="nc" id="L584">		var offset1 = frame.replace(offset + fieldSize);</span>
+<span class="nc" id="L585">		var recSize = ast.FT.visit(this, offset1);</span>
+<span class="nc" id="L586">		return fieldSize + recSize;</span>
+	}
+
+	@Override
+	public Integer visitSingleFieldTypeDenoter(SingleFieldTypeDenoter ast, Frame frame) {
+<span class="nc" id="L591">		var offset = frame.getSize();</span>
+		int fieldSize;
+<span class="nc bnc" id="L593" title="All 2 branches missed.">		if (ast.entity == null) {</span>
+<span class="nc" id="L594">			fieldSize = ast.T.visit(this);</span>
+<span class="nc" id="L595">			ast.entity = new Field(fieldSize, offset);</span>
+<span class="nc" id="L596">			writeTableDetails(ast);</span>
+		} else {
+<span class="nc" id="L598">			fieldSize = ast.entity.getSize();</span>
+		}
+
+<span class="nc" id="L601">		return fieldSize;</span>
+	}
+
+	// Literals, Identifiers and Operators
+	@Override
+	public Void visitCharacterLiteral(CharacterLiteral ast, Void arg) {
+<span class="nc" id="L607">		return null;</span>
+	}
+
+	@Override
+	public Void visitIdentifier(Identifier ast, Frame frame) {
+<span class="nc" id="L612">		var routineEntity = (RoutineEntity) ast.decl.entity;</span>
+<span class="nc" id="L613">		routineEntity.encodeCall(emitter, frame);</span>
+<span class="nc" id="L614">		return null;</span>
+	}
+
+	@Override
+	public Void visitIntegerLiteral(IntegerLiteral ast, Void arg) {
+<span class="nc" id="L619">		return null;</span>
+	}
+
+	@Override
+	public Void visitOperator(Operator ast, Frame frame) {
+<span class="nc" id="L624">		var routineEntity = (RoutineEntity) ast.decl.entity;</span>
+<span class="nc" id="L625">		routineEntity.encodeCall(emitter, frame);</span>
+<span class="nc" id="L626">		return null;</span>
+	}
+
+	// Value-or-variable names
+	@Override
+	public RuntimeEntity visitDotVname(DotVname ast, Frame frame) {
+<span class="nc" id="L632">		var baseObject = ast.V.visit(this, frame);</span>
+<span class="nc" id="L633">		ast.offset = ast.V.offset + ((Field) ast.I.decl.entity).getFieldOffset();</span>
+		// I.decl points to the appropriate record field
+<span class="nc" id="L635">		ast.indexed = ast.V.indexed;</span>
+<span class="nc" id="L636">		return baseObject;</span>
+	}
+
+	@Override
+	public RuntimeEntity visitSimpleVname(SimpleVname ast, Frame frame) {
+<span class="nc" id="L641">		ast.offset = 0;</span>
+<span class="nc" id="L642">		ast.indexed = false;</span>
+<span class="nc" id="L643">		return ast.I.decl.entity;</span>
+	}
+
+	@Override
+	public RuntimeEntity visitSubscriptVname(SubscriptVname ast, Frame frame) {
+<span class="nc" id="L648">		var baseObject = ast.V.visit(this, frame);</span>
+<span class="nc" id="L649">		ast.offset = ast.V.offset;</span>
+<span class="nc" id="L650">		ast.indexed = ast.V.indexed;</span>
+<span class="nc" id="L651">		var elemSize = ast.type.visit(this);</span>
+<span class="nc bnc" id="L652" title="All 2 branches missed.">		if (ast.E.isLiteral()) {</span>
+<span class="nc" id="L653">			ast.offset = ast.offset + ast.E.getValue() * elemSize;</span>
+		} else {
+			// v-name is indexed by a proper expression, not a literal
+<span class="nc bnc" id="L656" title="All 2 branches missed.">			if (ast.indexed) {</span>
+<span class="nc" id="L657">				frame = frame.expand(Machine.integerSize);</span>
+			}
+<span class="nc" id="L659">			ast.E.visit(this, frame);</span>
+<span class="nc bnc" id="L660" title="All 2 branches missed.">			if (elemSize != 1) {</span>
+<span class="nc" id="L661">				emitter.emit(OpCode.LOADL, 0, elemSize);</span>
+<span class="nc" id="L662">				emitter.emit(OpCode.CALL, Register.PB, Primitive.MULT);</span>
+			}
+<span class="nc bnc" id="L664" title="All 2 branches missed.">			if (ast.indexed)</span>
+<span class="nc" id="L665">				emitter.emit(OpCode.CALL, Register.PB, Primitive.ADD);</span>
+			else {
+<span class="nc" id="L667">				ast.indexed = true;</span>
+			}
+		}
+<span class="nc" id="L670">		return baseObject;</span>
+	}
+
+	// Programs
+	@Override
+	public Void visitProgram(Program ast, Frame frame) {
+<span class="nc" id="L676">		return ast.C.visit(this, frame);</span>
+	}
+
+<span class="nc" id="L679">	public Encoder(Emitter emitter, ErrorReporter reporter) {</span>
+<span class="nc" id="L680">		this.emitter = emitter;</span>
+<span class="nc" id="L681">		this.reporter = reporter;</span>
+
+<span class="nc" id="L683">		elaborateStdEnvironment();</span>
+<span class="nc" id="L684">	}</span>
+
+	private Emitter emitter;
+
+	private ErrorReporter reporter;
+
+	// Generates code to run a program.
+	// showingTable is true iff entity description details
+	// are to be displayed.
+	public final void encodeRun(Program program, boolean showingTable) {
+<span class="nc" id="L694">		tableDetailsReqd = showingTable;</span>
+		// startCodeGeneration();
+<span class="nc" id="L696">		program.visit(this, Frame.Initial);</span>
+<span class="nc" id="L697">		emitter.emit(OpCode.HALT);</span>
+<span class="nc" id="L698">	}</span>
+
+	// Decides run-time representation of a standard constant.
+	private final void elaborateStdConst(ConstDeclaration constDeclaration, int value) {
+
+<span class="nc" id="L703">		var typeSize = constDeclaration.E.type.visit(this);</span>
+<span class="nc" id="L704">		constDeclaration.entity = new KnownValue(typeSize, value);</span>
+<span class="nc" id="L705">		writeTableDetails(constDeclaration);</span>
+<span class="nc" id="L706">	}</span>
+
+	// Decides run-time representation of a standard routine.
+	private final void elaborateStdPrimRoutine(Declaration routineDeclaration, Primitive primitive) {
+<span class="nc" id="L710">		routineDeclaration.entity = new PrimitiveRoutine(Machine.closureSize, primitive);</span>
+<span class="nc" id="L711">		writeTableDetails(routineDeclaration);</span>
+<span class="nc" id="L712">	}</span>
+
+	private final void elaborateStdEqRoutine(Declaration routineDeclaration, Primitive primitive) {
+<span class="nc" id="L715">		routineDeclaration.entity = new EqualityRoutine(Machine.closureSize, primitive);</span>
+<span class="nc" id="L716">		writeTableDetails(routineDeclaration);</span>
+<span class="nc" id="L717">	}</span>
+
+	/**
+	 * in the following we associate the primitive routines (Primitive.*)
+	 * and the primitive types (Machine.*) in the abstract machine with 
+	 * the relevant std env declarations. 
+	 * The primitive routines are listed in Table C3 (P411) of the PLPJ book, 
+	 * and Table 3 of the Triangle guide
+	 */
+	private final void elaborateStdEnvironment() {
+<span class="nc" id="L727">		tableDetailsReqd = false;</span>
+<span class="nc" id="L728">		elaborateStdConst(StdEnvironment.falseDecl, Machine.falseRep);</span>
+<span class="nc" id="L729">		elaborateStdConst(StdEnvironment.trueDecl, Machine.trueRep);</span>
+<span class="nc" id="L730">		elaborateStdPrimRoutine(StdEnvironment.notDecl, Primitive.NOT);</span>
+<span class="nc" id="L731">		elaborateStdPrimRoutine(StdEnvironment.andDecl, Primitive.AND);</span>
+<span class="nc" id="L732">		elaborateStdPrimRoutine(StdEnvironment.orDecl, Primitive.OR);</span>
+<span class="nc" id="L733">		elaborateStdConst(StdEnvironment.maxintDecl, Machine.maxintRep);</span>
+<span class="nc" id="L734">		elaborateStdPrimRoutine(StdEnvironment.addDecl, Primitive.ADD);</span>
+<span class="nc" id="L735">		elaborateStdPrimRoutine(StdEnvironment.subtractDecl, Primitive.SUB);</span>
+<span class="nc" id="L736">		elaborateStdPrimRoutine(StdEnvironment.multiplyDecl, Primitive.MULT);</span>
+<span class="nc" id="L737">		elaborateStdPrimRoutine(StdEnvironment.divideDecl, Primitive.DIV);</span>
+<span class="nc" id="L738">		elaborateStdPrimRoutine(StdEnvironment.moduloDecl, Primitive.MOD);</span>
+<span class="nc" id="L739">		elaborateStdPrimRoutine(StdEnvironment.lessDecl, Primitive.LT);</span>
+<span class="nc" id="L740">		elaborateStdPrimRoutine(StdEnvironment.notgreaterDecl, Primitive.LE);</span>
+<span class="nc" id="L741">		elaborateStdPrimRoutine(StdEnvironment.greaterDecl, Primitive.GT);</span>
+<span class="nc" id="L742">		elaborateStdPrimRoutine(StdEnvironment.notlessDecl, Primitive.GE);</span>
+<span class="nc" id="L743">		elaborateStdPrimRoutine(StdEnvironment.chrDecl, Primitive.ID);</span>
+<span class="nc" id="L744">		elaborateStdPrimRoutine(StdEnvironment.ordDecl, Primitive.ID);</span>
+<span class="nc" id="L745">		elaborateStdPrimRoutine(StdEnvironment.eolDecl, Primitive.EOL);</span>
+<span class="nc" id="L746">		elaborateStdPrimRoutine(StdEnvironment.eofDecl, Primitive.EOF);</span>
+<span class="nc" id="L747">		elaborateStdPrimRoutine(StdEnvironment.getDecl, Primitive.GET);</span>
+<span class="nc" id="L748">		elaborateStdPrimRoutine(StdEnvironment.putDecl, Primitive.PUT);</span>
+<span class="nc" id="L749">		elaborateStdPrimRoutine(StdEnvironment.getintDecl, Primitive.GETINT);</span>
+<span class="nc" id="L750">		elaborateStdPrimRoutine(StdEnvironment.putintDecl, Primitive.PUTINT);</span>
+<span class="nc" id="L751">		elaborateStdPrimRoutine(StdEnvironment.geteolDecl, Primitive.GETEOL);</span>
+<span class="nc" id="L752">		elaborateStdPrimRoutine(StdEnvironment.puteolDecl, Primitive.PUTEOL);</span>
+<span class="nc" id="L753">		elaborateStdEqRoutine(StdEnvironment.equalDecl, Primitive.EQ);</span>
+<span class="nc" id="L754">		elaborateStdEqRoutine(StdEnvironment.unequalDecl, Primitive.NE);</span>
+<span class="nc" id="L755">	}</span>
+
+	boolean tableDetailsReqd;
+
+	/**
+	 * called by all visitor methods here; could be used to insert debugging information
+	 */
+	public static void writeTableDetails(AbstractSyntaxTree ast) {
+<span class="nc" id="L763">	}</span>
+
+	// Generates code to pop the top off the stack
+	// and store the value in a named constant or variable
+	// frame the local stack frame when
+	// the constant or variable is fetched at run-time.
+	// valSize is the size of the constant or variable's value.
+
+	private void encodeStore(Vname V, Frame frame, int valSize) {
+
+<span class="nc" id="L773">		var baseObject = (AddressableEntity) V.visit(this, frame);</span>
+		// If indexed = true, code will have been generated to load an index value.
+<span class="nc bnc" id="L775" title="All 2 branches missed.">		if (valSize &gt; 255) {</span>
+<span class="nc" id="L776">			reporter.reportRestriction(&quot;can't store values larger than 255 words&quot;);</span>
+<span class="nc" id="L777">			valSize = 255; // to allow code generation to continue</span>
+		}
+
+<span class="nc" id="L780">		baseObject.encodeStore(emitter, frame, valSize, V);</span>
+<span class="nc" id="L781">	}</span>
+
+	// Generates code to fetch the value of a named constant or variable
+	// and push it on to the stack.
+	// currentLevel is the routine level where the vname occurs.
+	// frameSize is the anticipated size of the local stack frame when
+	// the constant or variable is fetched at run-time.
+	// valSize is the size of the constant or variable's value.
+
+	private void encodeFetch(Vname V, Frame frame, int valSize) {
+
+<span class="nc" id="L792">		var baseObject = (FetchableEntity) V.visit(this, frame);</span>
+		// If indexed = true, code will have been generated to load an index value.
+<span class="nc bnc" id="L794" title="All 2 branches missed.">		if (valSize &gt; 255) {</span>
+<span class="nc" id="L795">			reporter.reportRestriction(&quot;can't load values larger than 255 words&quot;);</span>
+<span class="nc" id="L796">			valSize = 255; // to allow code generation to continue</span>
+		}
+
+<span class="nc" id="L799">		baseObject.encodeFetch(emitter, frame, valSize, V);</span>
+<span class="nc" id="L800">	}</span>
+
+	// Generates code to compute and push the address of a named variable.
+	// vname is the program phrase that names this variable.
+	// currentLevel is the routine level where the vname occurs.
+	// frameSize is the anticipated size of the local stack frame when
+	// the variable is addressed at run-time.
+
+	private void encodeFetchAddress(Vname V, Frame frame) {
+
+<span class="nc" id="L810">		var baseObject = (AddressableEntity) V.visit(this, frame);</span>
+<span class="nc" id="L811">		baseObject.encodeFetchAddress(emitter, frame, V);</span>
+<span class="nc" id="L812">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

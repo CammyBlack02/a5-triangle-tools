@@ -280,24 +280,33 @@ public class Parser {
 
 		switch (currentToken.kind) {
 
-		case IDENTIFIER: {
-			Identifier iAST = parseIdentifier();
-			if (currentToken.kind == Token.Kind.LPAREN) {
-				acceptIt();
-				ActualParameterSequence apsAST = parseActualParameterSequence();
-				accept(Token.Kind.RPAREN);
-				finish(commandPos);
-				commandAST = new CallCommand(iAST, apsAST, commandPos);
-
-			} else {
-
-				Vname vAST = parseRestOfVname(iAST);
-				accept(Token.Kind.BECOMES);
-				Expression eAST = parseExpression();
-				finish(commandPos);
-				commandAST = new AssignCommand(vAST, eAST, commandPos);
+			case IDENTIFIER: {
+				Identifier iAST = parseIdentifier();
+				if (currentToken.kind == Token.Kind.LPAREN) {
+					acceptIt();
+					ActualParameterSequence apsAST = parseActualParameterSequence();
+					accept(Token.Kind.RPAREN);
+					finish(commandPos);
+					commandAST = new CallCommand(iAST, apsAST, commandPos);
+				}
+				else if (currentToken.kind == Token.Kind.OPERATOR && currentToken.spelling.equals("++")) {
+					acceptIt(); // consume the ++
+					finish(commandPos);
+					// Create AST for: identifier = identifier + 1
+					Vname vAST = parseRestOfVname(iAST);
+					Expression e1AST = new VnameExpression(new SimpleVname(iAST, commandPos), commandPos);
+					Expression e2AST = new IntegerExpression(new IntegerLiteral("1", commandPos), commandPos);
+					Expression sumAST = new BinaryExpression(e1AST, new Operator("+", commandPos), e2AST, commandPos);
+					commandAST = new AssignCommand(vAST, sumAST, commandPos);
+				} 
+				else {
+					Vname vAST = parseRestOfVname(iAST);
+					accept(Token.Kind.BECOMES);
+					Expression eAST = parseExpression();
+					finish(commandPos);
+					commandAST = new AssignCommand(vAST, eAST, commandPos);
+				}
 			}
-		}
 			break;
 
 		case BEGIN:
