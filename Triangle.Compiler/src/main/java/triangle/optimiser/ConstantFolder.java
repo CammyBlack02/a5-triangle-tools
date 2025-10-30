@@ -16,9 +16,11 @@ import triangle.abstractSyntaxTrees.aggregates.SingleArrayAggregate;
 import triangle.abstractSyntaxTrees.aggregates.SingleRecordAggregate;
 import triangle.abstractSyntaxTrees.commands.AssignCommand;
 import triangle.abstractSyntaxTrees.commands.CallCommand;
+import triangle.abstractSyntaxTrees.commands.Command;
 import triangle.abstractSyntaxTrees.commands.EmptyCommand;
 import triangle.abstractSyntaxTrees.commands.IfCommand;
 import triangle.abstractSyntaxTrees.commands.LetCommand;
+import triangle.abstractSyntaxTrees.commands.LoopWhileCommand;
 import triangle.abstractSyntaxTrees.commands.RepeatCommand;
 import triangle.abstractSyntaxTrees.commands.SequentialCommand;
 import triangle.abstractSyntaxTrees.commands.WhileCommand;
@@ -498,20 +500,23 @@ public class ConstantFolder implements ActualParameterVisitor<Void, AbstractSynt
 	}
 
 	@Override
-	public AbstractSyntaxTree visitRepeatCommand(RepeatCommand ast, Void arg) {
+	public AbstractSyntaxTree visitLoopWhileCommand(LoopWhileCommand ast, Void arg) {
+		var C1 = (Command) ast.C1.visit(this);
+		var E = (Expression) ast.E.visit(this);
+		var C2 = (Command) ast.C2.visit(this);
+		return new LoopWhileCommand(C1, E, C2, ast.getPosition());
+	}
 
+	@Override
+	public AbstractSyntaxTree visitRepeatCommand(RepeatCommand ast, Void arg) {
+		ast.C.visit(this);
+		AbstractSyntaxTree replacement = ast.E.visit(this);
+		if (replacement != null) {
+			ast.E = (Expression) replacement;
+	
+	}
 		return null;
 	}
-	// TODO uncomment if you've implemented the repeat command
-	//@Override
-//	public AbstractSyntaxTree visitRepeatCommand(RepeatCommand ast, Void arg) {
-//		ast.C.visit(this);
-//		AbstractSyntaxTree replacement = ast.E.visit(this);
-//		if (replacement != null) {
-//			ast.E = (Expression) replacement;
-//		}
-//		return null;
-//	}
 
 	@Override
 	public AbstractSyntaxTree visitMultipleArrayAggregate(MultipleArrayAggregate ast, Void arg) {

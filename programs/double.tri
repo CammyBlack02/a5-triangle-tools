@@ -1,0 +1,14 @@
+! doubling test for assignment task 3 - adding ** operator
+
+let
+    var a: Integer
+in
+begin
+    getint(var a);
+    a**;
+    putint(a);
+    puteol();
+    a**;
+    putint(a);
+    puteol();
+end

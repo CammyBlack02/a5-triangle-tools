@@ -82,6 +82,16 @@ public class TestScanner {
 	public void testAdd() {
 		compileExpectSuccess("/add.tri");
 	}
+
+	@Test
+	public void testDouble() {
+		compileExpectSuccess("/double.tri");
+	}
+
+	@Test
+	public void testLoopWhile() {
+		compileExpectSuccess("/loopwhile.tri");
+	}
 	
 	
 	

@@ -1,0 +1,17 @@
+! expect: XYXYXY
+
+let
+  var i : Integer
+in
+begin
+  i := 0;
+  loop
+  begin
+    i := i + 0;
+    i := i + 1
+  end
+  while i < 3 do
+  begin
+    put('Y')
+  end
+end
