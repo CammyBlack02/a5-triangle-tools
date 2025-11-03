@@ -348,6 +348,12 @@ public class Parser {
 		}
 			break;
 
+		case LCURLY: 
+			acceptIt();
+			commandAST = parseCommand();
+			accept(Token.Kind.RCURLY);
+			break;
+
 		case WHILE: {
 			acceptIt();
 			Expression eAST = parseExpression();
@@ -385,6 +391,7 @@ public class Parser {
 		case ELSE:
 		case IN:
 		case EOT:
+		case RCURLY:
 
 			finish(commandPos);
 			commandAST = new EmptyCommand(commandPos);

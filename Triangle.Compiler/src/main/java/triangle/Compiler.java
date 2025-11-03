@@ -18,6 +18,9 @@
 
 package triangle;
 
+import com.sampullara.cli.Args;
+import com.sampullara.cli.Argument;
+
 import triangle.abstractSyntaxTrees.Program;
 import triangle.codeGenerator.Emitter;
 import triangle.codeGenerator.Encoder;
@@ -27,9 +30,6 @@ import triangle.syntacticAnalyzer.Parser;
 import triangle.syntacticAnalyzer.Scanner;
 import triangle.syntacticAnalyzer.SourceFile;
 import triangle.treeDrawer.Drawer;
-import com.sampullara.cli.Args;
-import com.sampullara.cli.Argument;
-
 /**
  * The main driver class for the Triangle compiler.
  */
@@ -59,6 +59,12 @@ public class Compiler {
 		required = false
 	 )
 	 protected static boolean showTreeAfterFolding = false;
+	 @Argument(
+		alias = "s",
+		description = "Show statistics",
+		required = false
+	 )
+	 protected static boolean showStatistics = false;
 
 
 	/** The filename for the object program, normally obj.tam. */
@@ -69,8 +75,7 @@ public class Compiler {
 	private static Emitter emitter;
 	private static ErrorReporter reporter;
 	private static Drawer drawer;
-
-	
+	private static Statistics statistics;
 
 	/** The AST representing the source program. */
 	private static Program theAST;
@@ -88,7 +93,7 @@ public class Compiler {
 	 * @return true iff the source program is free of compile-time errors, otherwise
 	 *         false.
 	 */
-	static boolean compileProgram(String sourceName, String objectName, boolean showingAST, boolean showASTAfterFolding) {
+	static boolean compileProgram(String sourceName, String objectName, boolean showingAST, boolean showASTAfterFolding, boolean showStatistics) {
 
 		System.out.println("********** " + "Triangle Compiler (Java Version 2.1)" + " **********");
 
@@ -107,6 +112,7 @@ public class Compiler {
 		emitter = new Emitter(reporter);
 		encoder = new Encoder(emitter, reporter);
 		drawer = new Drawer();
+		statistics = new Statistics();
 
 		// scanner.enableDebugging();
 		theAST = parser.parseProgram(); // 1st pass
@@ -124,6 +130,12 @@ public class Compiler {
 			}
 			if (showTreeAfterFolding) {
 				drawer.draw(theAST);
+			}
+			if (showStatistics) {
+				theAST.visit(statistics);
+				System.out.println("Statistics:");
+				System.out.println("Integer expressions: " + statistics.getIntegerExpressions());
+				System.out.println("Character expressions: " + statistics.getCharacterExpressions());
 			}
 			if (reporter.getNumErrors() == 0) {
 				System.out.println("Code Generation ...");
@@ -150,7 +162,7 @@ public class Compiler {
 	public static void main(String[] args) {
 
 		if (args.length < 1) {
-			System.out.println("Usage: tc filename [-o outputfilename] [-t] [-f] [-ta]");
+			System.out.println("Usage: tc filename [-o outputfilename] [-t] [-f] [-ta] [-s]");
 			System.exit(1);
 		}
 		
@@ -160,7 +172,7 @@ public class Compiler {
 
 		String sourceName = args[0];
 		
-		var compiledOK = compileProgram(sourceName, objectName, showTree, showTreeAfterFolding);
+		var compiledOK = compileProgram(sourceName, objectName, showTree, showTreeAfterFolding, showStatistics);
 
 		if (!showTree && !showTreeAfterFolding) {
 			System.exit(compiledOK ? 0 : 1);
