@@ -97,6 +97,11 @@ public class TestScanner {
 	public void testWhileCurly() {
 		compileExpectSuccess("/while-curly.tri");
 	}
+
+	@Test
+	public void testBoolFold() {
+		compileExpectSuccess("/booleans-to-fold.tri");
+	}
 	
 	
 	private void compileExpectSuccess(String filename) {

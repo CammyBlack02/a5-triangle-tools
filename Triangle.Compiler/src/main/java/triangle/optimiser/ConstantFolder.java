@@ -606,6 +606,18 @@ public class ConstantFolder implements ActualParameterVisitor<Void, AbstractSynt
 					return null;
 				}
 				foldedValue = int1 % int2;
+			}else if(o.decl == StdEnvironment.equalDecl){
+				foldedValue = int1 == int2;
+			}else if(o.decl == StdEnvironment.unequalDecl){
+				foldedValue = int1 != int2;
+			}else if(o.decl == StdEnvironment.lessDecl){
+				foldedValue = int1 < int2;
+			}else if(o.decl == StdEnvironment.notlessDecl){
+				foldedValue = int1 >= int2;
+			}else if(o.decl == StdEnvironment.greaterDecl){
+				foldedValue = int1 > int2;
+			}else if(o.decl == StdEnvironment.notgreaterDecl){
+				foldedValue = int1 <= int2;
 			}
 			
 			if (foldedValue instanceof Integer) {
@@ -613,8 +625,15 @@ public class ConstantFolder implements ActualParameterVisitor<Void, AbstractSynt
 				IntegerExpression ie = new IntegerExpression(il, node1.getPosition());
 				ie.type = StdEnvironment.integerType;
 				return ie;
-			} else if (foldedValue instanceof Boolean) {
-				/* currently not handled! */
+			} else if (foldedValue instanceof Boolean boolValue) {
+				//boolean boolValue = (Boolean) foldedValue; Removed because we can use the boolean value directly
+
+				Identifier boolID = new Identifier(boolValue ? "true" : "false", node1.getPosition());
+				boolID.decl = boolValue ? StdEnvironment.trueDecl : StdEnvironment.falseDecl;
+				SimpleVname name = new SimpleVname(boolID, node1.getPosition());
+				VnameExpression vnameExpr = new VnameExpression(name, node1.getPosition());
+				vnameExpr.type = StdEnvironment.booleanType;
+				return vnameExpr;
 			}
 		}
 
