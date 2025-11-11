@@ -1,0 +1,15 @@
+apply plugin: 'java-library'
+apply plugin: 'eclipse'
+
+java {
+    sourceCompatibility = 21
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'com.github.spullara.cli-parser:cli-parser:1.1.6'
+    implementation project(':Triangle.AbstractMachine')
+}

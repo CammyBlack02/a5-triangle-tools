@@ -513,8 +513,7 @@ public class ConstantFolder implements ActualParameterVisitor<Void, AbstractSynt
 		AbstractSyntaxTree replacement = ast.E.visit(this);
 		if (replacement != null) {
 			ast.E = (Expression) replacement;
-	
-	}
+		}
 		return null;
 	}
 
