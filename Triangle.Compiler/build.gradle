@@ -1,15 +1,26 @@
-apply plugin: 'java-library'
-apply plugin: 'eclipse'
+apply plugin: 'java'
 
 java {
     sourceCompatibility = 21
 }
 
-repositories {
-    mavenCentral()
+sourceSets {
+    test {
+        resources {
+            srcDir file("$rootDir/programs")
+        }
+    }
+}
+allprojects {
+    repositories {
+        mavenCentral()
+    }
 }
 
 dependencies {
-    implementation 'com.github.spullara.cli-parser:cli-parser:1.1.6'
     implementation project(':Triangle.AbstractMachine')
+    testImplementation 'junit:junit:4.13.2'
+    implementation 'com.github.spullara.cli-parser:cli-parser:1.1.6'
+
+
 }

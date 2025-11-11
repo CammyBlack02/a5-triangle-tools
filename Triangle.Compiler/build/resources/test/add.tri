@@ -1,0 +1,31 @@
+let
+func sum (a: Integer, b: Integer): Integer ~
+a+b;
+func product (a: Integer, b: Integer): Integer ~
+a*b;
+var i: Integer;
+var o: Integer
+in
+  begin
+  getint(var i);
+  getint(var o);
+  puteol();
+  putint(i);
+  puteol();
+  putint(o);
+  puteol();
+  if i = o then
+  begin
+  putint(sum(i,o));
+  puteol();
+  putint(product(i,o));
+  puteol();
+  put('S'); put('a'); put('m'); put('e');
+  end
+  else
+  begin
+  putint(sum(i,o));
+  puteol();
+  putint(product(i,o));
+  end;
+end 

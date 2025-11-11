@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="triangle.syntacticAnalyser.TestScanner" tests="12" skipped="0" failures="0" errors="0" timestamp="2025-11-11T12:24:14.470Z" hostname="d079118.stir.ac.uk" time="0.057">
+  <properties/>
+  <testcase name="testIsOperator" classname="triangle.syntacticAnalyser.TestScanner" time="0.006"/>
+  <testcase name="testBoolFold" classname="triangle.syntacticAnalyser.TestScanner" time="0.03"/>
+  <testcase name="testAdd" classname="triangle.syntacticAnalyser.TestScanner" time="0.003"/>
+  <testcase name="testHi" classname="triangle.syntacticAnalyser.TestScanner" time="0.002"/>
+  <testcase name="testBarDemo" classname="triangle.syntacticAnalyser.TestScanner" time="0.002"/>
+  <testcase name="testHiNewComment2" classname="triangle.syntacticAnalyser.TestScanner" time="0.001"/>
+  <testcase name="testRepeatUntil" classname="triangle.syntacticAnalyser.TestScanner" time="0.001"/>
+  <testcase name="testWhileCurly" classname="triangle.syntacticAnalyser.TestScanner" time="0.001"/>
+  <testcase name="testHiNewComment" classname="triangle.syntacticAnalyser.TestScanner" time="0.002"/>
+  <testcase name="testDouble" classname="triangle.syntacticAnalyser.TestScanner" time="0.002"/>
+  <testcase name="testIsDigit" classname="triangle.syntacticAnalyser.TestScanner" time="0.001"/>
+  <testcase name="testLoopWhile" classname="triangle.syntacticAnalyser.TestScanner" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
